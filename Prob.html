@@ -1,0 +1,577 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>Prob</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">Library Prob</h1>
+
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Reals</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Rdefinitions</span>.<br/>
+<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">R_scope</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Coq.Strings.String</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Coq.Lists.List</span>.<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">Lra</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Coq.Program.Equality</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">List</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">frac</span> (<span class="id" title="var">n</span> <span class="id" title="var">m</span> : <span class="id" title="var">Z</span>) : <span class="id" title="var">R</span> := <span class="id" title="var">IZR</span> <span class="id" title="var">n</span> / <span class="id" title="var">IZR</span> <span class="id" title="var">m</span>.<br/>
+<span class="id" title="keyword">Notation</span> &quot;x :: l" := (<span class="id" title="var">cons</span> <span class="id" title="var">x</span> <span class="id" title="var">l</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 60, <span class="id" title="tactic">right</span> <span class="id" title="keyword">associativity</span>).<br/>
+<span class="id" title="keyword">Notation</span> &quot;[]" := <span class="id" title="var">nil</span>.<br/>
+<span class="id" title="keyword">Notation</span> &quot;[ x ; .. ; y ]" := (<span class="id" title="var">cons</span> <span class="id" title="var">x</span> .. (<span class="id" title="var">cons</span> <span class="id" title="var">y</span> <span class="id" title="var">nil</span>) ..).<br/>
+<span class="id" title="keyword">Notation</span> &quot;[ x ]" := (<span class="id" title="var">cons</span> <span class="id" title="var">x</span> <span class="id" title="var">nil</span>).<br/>
+<span class="id" title="keyword">Implicit</span> <span class="id" title="keyword">Types</span> <span class="id" title="var">X</span> : <span class="id" title="keyword">Type</span>.<br/>
+<span class="id" title="keyword">Generalizable All Variables</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+In order to understand the idea of random variables, 
+    there must be an idea of a sample space. For this project,
+    I limit myself to finite sample spaces. 
+
+<div class="paragraph"> </div>
+
+    To work with sample spaces, basics of set theory are needed. 
+    I will take some of the more basic concepts for granted 
+    (e.g. S1 = S2 &lt;-&gt; S2 = S1) as that is not the focus of this project. 
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">HasSetEquality</span> {<span class="id" title="var">X</span>} (<span class="id" title="var">S1</span> <span class="id" title="var">S2</span> : <span class="id" title="var">list</span> <span class="id" title="var">X</span>) := <br/>
+&nbsp;&nbsp;<span class="id" title="keyword">forall</span> (<span class="id" title="var">x</span> : <span class="id" title="var">X</span>), <span class="id" title="var">In</span> <span class="id" title="var">x</span> <span class="id" title="var">S1</span> &lt;-&gt; <span class="id" title="var">In</span> <span class="id" title="var">x</span> <span class="id" title="var">S2</span>.<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">IsSubsetOf</span> {<span class="id" title="var">X</span>} (<span class="id" title="var">S1</span> <span class="id" title="var">S2</span> : <span class="id" title="var">list</span> <span class="id" title="var">X</span>) :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">forall</span> (<span class="id" title="var">x</span> : <span class="id" title="var">X</span>), <span class="id" title="var">In</span> <span class="id" title="var">x</span> <span class="id" title="var">S1</span> -&gt; <span class="id" title="var">In</span> <span class="id" title="var">x</span> <span class="id" title="var">S2</span>.<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">IsUnionOf</span> {<span class="id" title="var">X</span>} (<span class="id" title="var">S1</span> <span class="id" title="var">S2</span> <span class="id" title="var">S1US2</span>: <span class="id" title="var">list</span> <span class="id" title="var">X</span>) := <br/>
+&nbsp;&nbsp;<span class="id" title="keyword">forall</span> (<span class="id" title="var">x</span> : <span class="id" title="var">X</span>), (<span class="id" title="var">In</span> <span class="id" title="var">x</span> <span class="id" title="var">S2</span> \/ <span class="id" title="var">In</span> <span class="id" title="var">x</span> <span class="id" title="var">S1</span>) &lt;-&gt; <span class="id" title="var">In</span> <span class="id" title="var">x</span> <span class="id" title="var">S1US2</span>.<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">IsIntersectOf</span> {<span class="id" title="var">X</span>} (<span class="id" title="var">S1</span> <span class="id" title="var">S2</span> <span class="id" title="var">S1IS2</span>: <span class="id" title="var">list</span> <span class="id" title="var">X</span>) := <br/>
+&nbsp;&nbsp;<span class="id" title="keyword">forall</span> (<span class="id" title="var">x</span> : <span class="id" title="var">X</span>), (<span class="id" title="var">In</span> <span class="id" title="var">x</span> <span class="id" title="var">S1IS2</span> &lt;-&gt; <span class="id" title="var">In</span> <span class="id" title="var">x</span> <span class="id" title="var">S1</span> /\ <span class="id" title="var">In</span> <span class="id" title="var">x</span> <span class="id" title="var">S2</span>).<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">IsRemovalOf</span> {<span class="id" title="var">X</span>} (<span class="id" title="var">S1</span> <span class="id" title="var">S2</span> <span class="id" title="var">S1RS2</span>: <span class="id" title="var">list</span> <span class="id" title="var">X</span>) := <br/>
+&nbsp;&nbsp;<span class="id" title="keyword">forall</span> (<span class="id" title="var">x</span> : <span class="id" title="var">X</span>), (<span class="id" title="var">In</span> <span class="id" title="var">x</span> <span class="id" title="var">S1</span> /\ ~(<span class="id" title="var">In</span> <span class="id" title="var">x</span> <span class="id" title="var">S2</span>)) &lt;-&gt; <span class="id" title="var">In</span> <span class="id" title="var">x</span> <span class="id" title="var">S1RS2</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Notation to make working with sets easier 
+</div>
+<div class="code">
+<span class="id" title="keyword">Notation</span> &quot;S1 'SetEqual' S2" := (<span class="id" title="var">HasSetEquality</span> <span class="id" title="var">S1</span> <span class="id" title="var">S2</span>) (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 50).<br/>
+<span class="id" title="keyword">Notation</span> &quot;S1 'subsetOf' S2" := (<span class="id" title="var">IsSubsetOf</span> <span class="id" title="var">S1</span> <span class="id" title="var">S2</span>) (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 50).<br/>
+<span class="id" title="keyword">Notation</span> &quot;S1 'unionWith' S2 'is' S1US2" := (<span class="id" title="var">IsUnionOf</span> <span class="id" title="var">S1</span> <span class="id" title="var">S2</span> <span class="id" title="var">S1US2</span>) (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 50).<br/>
+<span class="id" title="keyword">Notation</span> &quot;S1 'intersectWith' S2 'is' S1IS2" := (<span class="id" title="var">IsIntersectOf</span> <span class="id" title="var">S1</span> <span class="id" title="var">S2</span> <span class="id" title="var">S1IS2</span>) (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 50).<br/>
+<span class="id" title="keyword">Notation</span> &quot;S1 'removing' S2 'is' S1RS2" := (<span class="id" title="var">IsRemovalOf</span> <span class="id" title="var">S1</span> <span class="id" title="var">S2</span> <span class="id" title="var">S1RS2</span>) (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 50).<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Additionally, because many operations over sums need to be performed
+    in order to work with probability, I need to prove several properties of 
+    them. However, working with sums is incredibly difficult, and I was not
+    able to prove some key concepts. So, I decided to assert them as axioms
+    in order to focus on the proofs that concerned probability. 
+<div class="paragraph"> </div>
+
+ An inductively defined type can be used as a sample space.
+    For example, the sample space for the results of a coin flip 
+    contains 2 outcomes: heads and tails. 
+
+<div class="paragraph"> </div>
+
+    However, in order to iterate over the whole sample space
+    I need to be able to iterate over the elements of the type. So,
+    I define a list of elements of the type.
+    
+<div class="paragraph"> </div>
+
+ I first create a type alias for the different outcomes
+    that are possible. A sample space is a list with 
+    no duplicates - I use coercion to make it easy to work with. 
+    An event is a subset of a sample space.
+
+<div class="paragraph"> </div>
+
+    Because there are often constraints on the objects I work with in 
+    probability, I define a new data type, ObjAndProp that can hold 
+    properties about an object, as well as the object itself.
+    
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">Inductive</span> <span class="id" title="var">ObjAndProp</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} {<span class="id" title="var">P</span> : <span class="id" title="var">A</span> -&gt; <span class="id" title="keyword">Prop</span>}<br/>
+&nbsp;&nbsp;: <span class="id" title="keyword">Type</span> := <br/>
+&nbsp;&nbsp;| <span class="id" title="var">OandP</span> (<span class="id" title="var">x</span> : <span class="id" title="var">A</span>) (<span class="id" title="var">p</span> : <span class="id" title="var">P</span> <span class="id" title="var">x</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">obj_of</span> {<span class="id" title="var">A</span> <span class="id" title="var">P</span>} : (@<span class="id" title="var">ObjAndProp</span> <span class="id" title="var">A</span> <span class="id" title="var">P</span>) -&gt; <span class="id" title="var">A</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">x</span> =&gt; <span class="id" title="keyword">match</span> <span class="id" title="var">x</span> <span class="id" title="keyword">with</span> | <span class="id" title="var">OandP</span> <span class="id" title="var">x</span> <span class="id" title="var">_</span> =&gt; <span class="id" title="var">x</span> <span class="id" title="keyword">end</span>.<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">prop_of</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} {<span class="id" title="var">P</span> : <span class="id" title="var">A</span> -&gt; <span class="id" title="keyword">Prop</span>} (<span class="id" title="var">OP</span> : @<span class="id" title="var">ObjAndProp</span> <span class="id" title="var">A</span> <span class="id" title="var">P</span>) : <span class="id" title="var">P</span> (<span class="id" title="var">obj_of</span> <span class="id" title="var">OP</span>) :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">OP</span> <span class="id" title="keyword">with</span> | <span class="id" title="var">OandP</span> <span class="id" title="var">a</span> <span class="id" title="var">p</span> =&gt; <span class="id" title="var">p</span> <span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Notation</span> &quot;A 'thatSatisfies' P" := (@<span class="id" title="var">ObjAndProp</span> <span class="id" title="var">A</span> <span class="id" title="var">P</span>) (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 50).<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">Outcome</span> := <span class="id" title="keyword">Type</span>.<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">ListSet</span> <span class="id" title="var">X</span> := (<span class="id" title="var">list</span> <span class="id" title="var">X</span>) <span class="id" title="var">thatSatisfies</span> (@<span class="id" title="var">NoDup</span> <span class="id" title="var">X</span>).<br/>
+<span class="id" title="keyword">Coercion</span> <span class="id" title="var">listSet_to_list</span> {<span class="id" title="var">X</span>} (<span class="id" title="var">S</span> : <span class="id" title="var">ListSet</span> <span class="id" title="var">X</span>) : <span class="id" title="var">list</span> <span class="id" title="var">X</span> := <span class="id" title="var">obj_of</span> <span class="id" title="var">S</span>.<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">ListSetFactory</span> {<span class="id" title="var">X</span>} (<span class="id" title="var">S</span> : <span class="id" title="var">list</span> <span class="id" title="var">X</span>) (<span class="id" title="var">H</span> : <span class="id" title="var">NoDup</span> <span class="id" title="var">S</span>) := <span class="id" title="var">OandP</span> <span class="id" title="var">S</span> <span class="id" title="var">H</span>.<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">EmptyListSet</span> {<span class="id" title="var">X</span>} : <span class="id" title="var">ListSet</span> <span class="id" title="var">X</span> := <span class="id" title="var">ListSetFactory</span> [] (<span class="id" title="var">NoDup_nil</span> <span class="id" title="var">X</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">SampleSpace</span> <span class="id" title="var">X</span> := <span class="id" title="var">ListSet</span> <span class="id" title="var">X</span>.<br/>
+<span class="id" title="keyword">Coercion</span> <span class="id" title="var">ss_to_l</span> {<span class="id" title="var">X</span>} : <span class="id" title="var">ListSet</span> <span class="id" title="var">X</span> -&gt; <span class="id" title="var">list</span> <span class="id" title="var">X</span> := <span class="id" title="var">obj_of</span>.<br/>
+<span class="id" title="keyword">Coercion</span> <span class="id" title="var">ss_to_nodup</span> {<span class="id" title="var">X</span>} (<span class="id" title="var">SS</span> : <span class="id" title="var">ListSet</span> <span class="id" title="var">X</span>) : <span class="id" title="var">NoDup</span> (<span class="id" title="var">ss_to_l</span> <span class="id" title="var">SS</span>) := <span class="id" title="var">prop_of</span> <span class="id" title="var">SS</span>.<br/>
+<span class="id" title="keyword">Coercion</span> <span class="id" title="var">listset_to_ss</span> {<span class="id" title="var">X</span>} (<span class="id" title="var">SS</span> : <span class="id" title="var">SampleSpace</span> <span class="id" title="var">X</span>) : <span class="id" title="var">ListSet</span> <span class="id" title="var">X</span> := <span class="id" title="var">SS</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+An event is a subset of the sample space. An event is different in different 
+    sample spaces/probability contexts, in my construction of probability. I also 
+    create a property so that one can verify whether a list is an event. 
+</div>
+<div class="code">
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">Event</span> {<span class="id" title="var">X</span>} (<span class="id" title="var">sspace</span> : <span class="id" title="var">SampleSpace</span> <span class="id" title="var">X</span>) := <br/>
+&nbsp;&nbsp;(<span class="id" title="var">ListSet</span> <span class="id" title="var">X</span>) <span class="id" title="var">thatSatisfies</span> (<span class="id" title="keyword">fun</span> <span class="id" title="var">x</span> =&gt; <span class="id" title="var">IsSubsetOf</span> <span class="id" title="var">x</span> <span class="id" title="var">sspace</span>).<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">EventFactory</span> {<span class="id" title="var">X</span>} (<span class="id" title="var">sspace</span> : <span class="id" title="var">SampleSpace</span> <span class="id" title="var">X</span>) <br/>
+&nbsp;&nbsp;(<span class="id" title="var">E</span> : <span class="id" title="var">ListSet</span> <span class="id" title="var">X</span>) (<span class="id" title="var">H</span> : <span class="id" title="var">IsSubsetOf</span> <span class="id" title="var">E</span> <span class="id" title="var">sspace</span>): <span class="id" title="var">Event</span> <span class="id" title="var">sspace</span> := <span class="id" title="var">OandP</span> <span class="id" title="var">E</span> <span class="id" title="var">H</span>.<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">IsEvent</span> {<span class="id" title="var">X</span>} (<span class="id" title="var">SSpace</span> : <span class="id" title="var">SampleSpace</span> <span class="id" title="var">X</span>) (<span class="id" title="var">L</span> : <span class="id" title="var">ListSet</span> <span class="id" title="var">X</span>) : <span class="id" title="keyword">Prop</span> := <span class="id" title="var">L</span> <span class="id" title="var">subsetOf</span> <span class="id" title="var">SSpace</span>.<br/>
+<span class="id" title="keyword">Coercion</span> <span class="id" title="var">ev_to_l</span> {<span class="id" title="var">X</span> <span class="id" title="var">SSpace</span>} : <span class="id" title="var">Event</span> <span class="id" title="var">SSpace</span> -&gt; <span class="id" title="var">ListSet</span> <span class="id" title="var">X</span> := <span class="id" title="var">obj_of</span>.<br/>
+<span class="id" title="keyword">Coercion</span> <span class="id" title="var">event_to_verification</span> {<span class="id" title="var">X</span>} {<span class="id" title="var">SSpace</span> : <span class="id" title="var">SampleSpace</span> <span class="id" title="var">X</span>} (<span class="id" title="var">E</span> : <span class="id" title="var">Event</span> <span class="id" title="var">SSpace</span>) : <span class="id" title="var">IsEvent</span> <span class="id" title="var">SSpace</span> <span class="id" title="var">E</span> := <span class="id" title="var">prop_of</span> <span class="id" title="var">E</span>.<br/>
+<span class="id" title="keyword">Coercion</span> <span class="id" title="var">ev_to_v'</span> {<span class="id" title="var">X</span>} {<span class="id" title="var">SSpace</span> : <span class="id" title="var">SampleSpace</span> <span class="id" title="var">X</span>} (<span class="id" title="var">E</span> : <span class="id" title="var">Event</span> <span class="id" title="var">SSpace</span>) : <span class="id" title="var">IsSubsetOf</span> <span class="id" title="var">E</span> <span class="id" title="var">SSpace</span> := <span class="id" title="var">prop_of</span> <span class="id" title="var">E</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+I define the set operations on events. 
+</div>
+<div class="code">
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">EmptyEvent</span> {<span class="id" title="var">X</span>} (<span class="id" title="var">sspace</span> : <span class="id" title="var">SampleSpace</span> <span class="id" title="var">X</span>) :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">EventFactory</span> <span class="id" title="var">sspace</span> <span class="id" title="var">EmptyListSet</span> (<span class="id" title="keyword">ltac</span>:(<span class="id" title="tactic">unfold</span> <span class="id" title="var">IsSubsetOf</span>; <span class="id" title="tactic">intros</span>; <span class="id" title="tactic">simpl</span>; <span class="id" title="tactic">tauto</span>)).<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">WholeSpace</span> {<span class="id" title="var">X</span>} (<span class="id" title="var">S</span> : <span class="id" title="var">SampleSpace</span> <span class="id" title="var">X</span>) := <br/>
+&nbsp;&nbsp;<span class="id" title="var">EventFactory</span> <span class="id" title="var">S</span> <span class="id" title="var">S</span> (<span class="id" title="keyword">ltac</span>:(<span class="id" title="tactic">unfold</span> <span class="id" title="var">IsSubsetOf</span>; <span class="id" title="tactic">intros</span>; <span class="id" title="tactic">simpl</span>; <span class="id" title="tactic">tauto</span>)).<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">Complement</span> {<span class="id" title="var">X</span>} (<span class="id" title="var">S</span> : <span class="id" title="var">SampleSpace</span> <span class="id" title="var">X</span>) : <span class="id" title="var">Event</span> <span class="id" title="var">S</span> -&gt; <span class="id" title="var">Event</span> <span class="id" title="var">S</span> -&gt; <span class="id" title="keyword">Prop</span> := <br/>
+&nbsp;&nbsp;<span class="id" title="keyword">fun</span> <span class="id" title="var">e1</span> <span class="id" title="var">e2</span> =&gt; <span class="id" title="var">e1</span> <span class="id" title="var">unionWith</span> <span class="id" title="var">e2</span> <span class="id" title="keyword">is</span> (<span class="id" title="var">WholeSpace</span> <span class="id" title="var">S</span>).<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+As an example, here is the sample space  for a coin flip - possibly 
+    the simplest sample space to work with. 
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">Inductive</span> <span class="id" title="var">CoinFlip_Outcome</span> : <span class="id" title="var">Outcome</span> :=<br/>
+&nbsp;&nbsp;| <span class="id" title="var">Heads</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">Tails</span>.<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">CoinFlip_List</span> := [<span class="id" title="var">Heads</span>; <span class="id" title="var">Tails</span>].<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+I wrote this tactic to prove the lack of duplicates
+    in a finite list, since it is simply a matter of computation. 
+</div>
+<div class="code">
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">verify_nodup</span> := <br/>
+&nbsp;&nbsp;<span class="id" title="tactic">repeat</span> (<span class="id" title="tactic">apply</span> <span class="id" title="var">NoDup_cons</span>);<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">unfold</span> <span class="id" title="var">In</span>, <span class="id" title="var">not</span>; <span class="id" title="tactic">intros</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">repeat</span> <span class="id" title="keyword">match</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">H</span>: <span class="id" title="var">_</span> \/ <span class="id" title="var">_</span> |- <span class="id" title="var">_</span> =&gt; <span class="id" title="tactic">destruct</span> <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">H</span> : ?<span class="id" title="var">A</span> = ?<span class="id" title="var">B</span> |- <span class="id" title="var">_</span> =&gt; <span class="id" title="tactic">discriminate</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">H</span> : <span class="id" title="var">False</span> |- <span class="id" title="var">_</span> =&gt; <span class="id" title="tactic">destruct</span> <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">try</span> (<span class="id" title="tactic">apply</span> <span class="id" title="var">NoDup_nil</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">nodup_coinflip</span> : <span class="id" title="var">NoDup</span> <span class="id" title="var">CoinFlip_List</span> := <br/>
+&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">ltac</span>:(<span class="id" title="tactic">unfold</span> <span class="id" title="var">CoinFlip_List</span>; <span class="id" title="var">verify_nodup</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">CoinFlip</span> : <span class="id" title="var">SampleSpace</span> <span class="id" title="var">CoinFlip_Outcome</span> := <br/>
+&nbsp;&nbsp;<span class="id" title="var">ListSetFactory</span> [<span class="id" title="var">Heads</span>; <span class="id" title="var">Tails</span>] (<span class="id" title="keyword">ltac</span>:(<span class="id" title="var">verify_nodup</span>)).<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Now, I define the probability mass function.  
+
+<div class="paragraph"> </div>
+
+    First, the probability of an event must be &lt;= 1 
+</div>
+<div class="code">
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">prob_0_to_1</span> {<span class="id" title="var">X</span>} (<span class="id" title="var">S</span> : <span class="id" title="var">SampleSpace</span> <span class="id" title="var">X</span>) (<span class="id" title="var">F</span> : <span class="id" title="var">X</span> -&gt; <span class="id" title="var">R</span>) : <span class="id" title="keyword">Prop</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">forall</span> (<span class="id" title="var">x</span> : <span class="id" title="var">X</span>), <span class="id" title="var">In</span> <span class="id" title="var">x</span> <span class="id" title="var">S</span> -&gt; <span class="id" title="var">Rle</span> (<span class="id" title="var">INR</span> 0) (<span class="id" title="var">F</span> <span class="id" title="var">x</span>) /\ <span class="id" title="var">Rle</span> (<span class="id" title="var">F</span> <span class="id" title="var">x</span>) (<span class="id" title="var">INR</span> 1).<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Second, the sum of all the probabilties must be = 1. Note that 
+    only the probabilities in the sample space need to sum, not necessarily
+    all possible outcomes. 
+</div>
+<div class="code">
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">prob_sum_1</span> {<span class="id" title="var">X</span>} (<span class="id" title="var">S</span> : <span class="id" title="var">SampleSpace</span> <span class="id" title="var">X</span>) (<span class="id" title="var">F</span> : <span class="id" title="var">X</span> -&gt; <span class="id" title="var">R</span>) : <span class="id" title="keyword">Prop</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">fold_right</span> <span class="id" title="var">Rplus</span> (<span class="id" title="var">INR</span> 0) (<span class="id" title="var">map</span> <span class="id" title="var">F</span> <span class="id" title="var">S</span>) = (<span class="id" title="var">INR</span> 1).<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">function</span> <span class="id" title="var">X</span> := <span class="id" title="var">X</span> -&gt; <span class="id" title="var">R</span>.<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">PMF</span> {<span class="id" title="var">X</span>} (<span class="id" title="var">S</span> : <span class="id" title="var">SampleSpace</span> <span class="id" title="var">X</span>) (<span class="id" title="var">func</span> : <span class="id" title="var">function</span> <span class="id" title="var">X</span>) : <span class="id" title="keyword">Prop</span> := <span class="id" title="var">prob_0_to_1</span> <span class="id" title="var">S</span> <span class="id" title="var">func</span> /\ <span class="id" title="var">prob_sum_1</span> <span class="id" title="var">S</span> <span class="id" title="var">func</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+To use these definitions in conjunction, I can create a type
+    that will let me wrap them like I had the sample space before. 
+</div>
+<div class="code">
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">PMF_func</span> {<span class="id" title="var">X</span>} (<span class="id" title="var">SSpace</span> : <span class="id" title="var">SampleSpace</span> <span class="id" title="var">X</span>) := (<span class="id" title="var">function</span> <span class="id" title="var">X</span>) <span class="id" title="var">thatSatisfies</span> (<span class="id" title="var">PMF</span> <span class="id" title="var">SSpace</span>).<br/>
+<span class="id" title="keyword">Coercion</span> <span class="id" title="var">to_regfunc</span> {<span class="id" title="var">X</span>} {<span class="id" title="var">SSpace</span> : <span class="id" title="var">SampleSpace</span> <span class="id" title="var">X</span>} (<span class="id" title="var">pmf</span> : <span class="id" title="var">PMF_func</span> <span class="id" title="var">SSpace</span>) : <span class="id" title="var">function</span> <span class="id" title="var">X</span> := <span class="id" title="var">obj_of</span> <span class="id" title="var">pmf</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Because these proofs are computations, I define a tactic to do this automatically. Then,
+    I can easily verify when a function is a valid PMF. 
+</div>
+<div class="code">
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">verify_prob_bound</span> := <span class="id" title="tactic">unfold</span> <span class="id" title="var">prob_0_to_1</span>; <span class="id" title="tactic">intros</span> <span class="id" title="var">o</span>; <span class="id" title="tactic">destruct</span> <span class="id" title="var">o</span>; <span class="id" title="tactic">simpl</span>; <span class="id" title="tactic">split</span>; <span class="id" title="tactic">unfold</span> <span class="id" title="var">frac</span>; <span class="id" title="var">lra</span>.<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">verify_prob_sum</span> := <span class="id" title="tactic">unfold</span> <span class="id" title="var">prob_sum_1</span>; <span class="id" title="tactic">simpl</span>; <span class="id" title="tactic">unfold</span> <span class="id" title="var">frac</span>; <span class="id" title="var">lra</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Now, I define the probability of an event. This is the sum of the probabilities
+    of all the outcomes in the event. I define this using the PMF. 
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">event_prob_func</span> {<span class="id" title="var">X</span>} {<span class="id" title="var">S</span> : <span class="id" title="var">SampleSpace</span> <span class="id" title="var">X</span>} (<span class="id" title="var">pmf_func</span> : <span class="id" title="var">PMF_func</span> <span class="id" title="var">S</span>) : <span class="id" title="var">Event</span> <span class="id" title="var">S</span> -&gt; <span class="id" title="var">R</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">E</span> =&gt; <br/>
+&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">evSet</span> := <span class="id" title="var">obj_of</span> <span class="id" title="var">E</span> <span class="id" title="tactic">in</span> <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">f</span> := <span class="id" title="var">obj_of</span> <span class="id" title="var">pmf_func</span> <span class="id" title="tactic">in</span> <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">fold_right</span> <span class="id" title="var">Rplus</span> (<span class="id" title="var">INR</span> 0) (<span class="id" title="var">map</span> <span class="id" title="var">f</span> <span class="id" title="var">evSet</span>).<br/>
+<span class="id" title="keyword">Notation</span> &quot;F 'Pr_(' E ')' " := (<span class="id" title="var">event_prob_func</span> <span class="id" title="var">F</span> <span class="id" title="var">E</span>) (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 50).<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Continuing the example from earlier, here is the PMF of a coin flip.
+    Proving the properties is simply a matter of computation 
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">CoinFlip_f</span> := <br/>
+&nbsp;&nbsp;<span class="id" title="keyword">fun</span> <span class="id" title="var">x</span> =&gt; <span class="id" title="keyword">match</span> <span class="id" title="var">x</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">Heads</span> =&gt;  <span class="id" title="var">frac</span> 1 2 <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">Tails</span> =&gt; <span class="id" title="var">frac</span> 1 2<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+<span class="id" title="keyword">Fact</span> <span class="id" title="var">CoinFlip_f_is_PMF</span> : <span class="id" title="var">PMF</span> <span class="id" title="var">CoinFlip</span> <span class="id" title="var">CoinFlip_f</span>.<br/>
+<span class="id" title="keyword">Proof</span>. <span class="id" title="tactic">split</span>. <span class="id" title="var">verify_prob_bound</span>. <span class="id" title="var">verify_prob_sum</span>. <span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+
+<br/>
+<span class="id" title="keyword">Inductive</span> <span class="id" title="var">d6_outcome</span> : <span class="id" title="var">Outcome</span> :=<br/>
+&nbsp;&nbsp;| <span class="id" title="var">One</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">Two</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">Three</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">Four</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">Five</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">Six</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">d6_roll</span> : <span class="id" title="var">SampleSpace</span> <span class="id" title="var">d6_outcome</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">ListSetFactory</span> [<span class="id" title="var">One</span>; <span class="id" title="var">Two</span>; <span class="id" title="var">Three</span>; <span class="id" title="var">Four</span>; <span class="id" title="var">Five</span>; <span class="id" title="var">Six</span>] (<span class="id" title="keyword">ltac</span>:(<span class="id" title="var">verify_nodup</span>)).<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">d6_pmf_f</span> : <span class="id" title="var">d6_outcome</span> -&gt; <span class="id" title="var">R</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">fun</span> <span class="id" title="var">d</span> =&gt; <span class="id" title="keyword">match</span> <span class="id" title="var">d</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">One</span> =&gt; <span class="id" title="var">frac</span> 1 6<br/>
+&nbsp;&nbsp;| <span class="id" title="var">Two</span> =&gt; <span class="id" title="var">frac</span> 1 6<br/>
+&nbsp;&nbsp;| <span class="id" title="var">Three</span> =&gt; <span class="id" title="var">frac</span> 1 6<br/>
+&nbsp;&nbsp;| <span class="id" title="var">Four</span> =&gt; <span class="id" title="var">frac</span> 1 6<br/>
+&nbsp;&nbsp;| <span class="id" title="var">Five</span> =&gt; <span class="id" title="var">frac</span> 1 6<br/>
+&nbsp;&nbsp;| <span class="id" title="var">Six</span> =&gt; <span class="id" title="var">frac</span> 1 6<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+<span class="id" title="keyword">Fact</span> <span class="id" title="var">d6_pmf_is_pmf</span> : <span class="id" title="var">PMF</span> <span class="id" title="var">d6_roll</span> <span class="id" title="var">d6_pmf_f</span>.<br/>
+<span class="id" title="keyword">Proof</span>. <span class="id" title="tactic">split</span>. <span class="id" title="var">verify_prob_bound</span>. <span class="id" title="var">verify_prob_sum</span>. <span class="id" title="keyword">Qed</span>.<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">Di</span> : <span class="id" title="var">PMF_func</span> <span class="id" title="var">d6_roll</span> := (<span class="id" title="var">OandP</span> <span class="id" title="var">d6_pmf_f</span> <span class="id" title="var">d6_pmf_is_pmf</span>).<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+This custom tactic makes proving subsets much easier, and the following one
+    allows me to compute probabilities. 
+</div>
+<div class="code">
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">prove_subset</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">unfold</span> <span class="id" title="var">IsSubsetOf</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">unfold</span> <span class="id" title="var">In</span>; <span class="id" title="tactic">intros</span> <span class="id" title="var">x</span> <span class="id" title="var">H</span>; <span class="id" title="tactic">destruct</span> <span class="id" title="var">H</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">repeat</span> (<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| [ <span class="id" title="var">H</span> : ?<span class="id" title="var">A</span> = ?<span class="id" title="var">x</span> |- ?<span class="id" title="var">A</span> = ?<span class="id" title="var">x</span> \/ <span class="id" title="var">_</span> ] =&gt; <span class="id" title="tactic">left</span> <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| [ <span class="id" title="var">H</span> : ?<span class="id" title="var">A</span> = ?<span class="id" title="var">x</span> |- <span class="id" title="var">_</span> \/ <span class="id" title="var">_</span> ] =&gt; <span class="id" title="tactic">right</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| [ <span class="id" title="var">H</span> : ?<span class="id" title="var">A</span> = ?<span class="id" title="var">x</span> |- <span class="id" title="var">_</span> = <span class="id" title="var">_</span> ] =&gt; <span class="id" title="tactic">auto</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| [ <span class="id" title="var">H</span> : ?<span class="id" title="var">A</span> = ?<span class="id" title="var">x</span> |- <span class="id" title="var">False</span> ] =&gt; <span class="id" title="tactic">subst</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| [ <span class="id" title="var">H</span> : <span class="id" title="var">False</span> |- <span class="id" title="var">_</span> ] =&gt; <span class="id" title="tactic">destruct</span> <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| [ <span class="id" title="var">H</span> : <span class="id" title="var">_</span> \/ <span class="id" title="var">_</span> |- <span class="id" title="var">_</span> ] =&gt; <span class="id" title="tactic">destruct</span> <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;).<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">compute_probability</span> := <span class="id" title="tactic">unfold</span> <span class="id" title="var">event_prob_func</span>; <span class="id" title="tactic">simpl</span>; <span class="id" title="tactic">unfold</span> <span class="id" title="var">frac</span>; <span class="id" title="var">lra</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Events  Now, I demonstate the use of events in the sample space. 
+    One possible event is rolling all even numbers. 
+</div>
+<div class="code">
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">even_roll_set</span> : <span class="id" title="var">ListSet</span> <span class="id" title="var">d6_outcome</span> := <span class="id" title="var">ListSetFactory</span> [<span class="id" title="var">Two</span>; <span class="id" title="var">Four</span>; <span class="id" title="var">Six</span>] (<span class="id" title="keyword">ltac</span>:(<span class="id" title="var">verify_nodup</span>)).<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">even_roll_subset</span> : <span class="id" title="var">even_roll_set</span> <span class="id" title="var">subsetOf</span> <span class="id" title="var">d6_roll</span>.<br/>
+<span class="id" title="keyword">Proof</span>. <span class="id" title="tactic">unfold</span> <span class="id" title="var">even_roll_set</span>, <span class="id" title="var">d6_roll</span>. <span class="id" title="tactic">simpl</span>. <span class="id" title="var">prove_subset</span>. <span class="id" title="keyword">Qed</span>.<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">even_roll_event_of_d6</span> : <span class="id" title="var">Event</span> <span class="id" title="var">d6_roll</span> := <span class="id" title="var">EventFactory</span> <span class="id" title="var">d6_roll</span> <span class="id" title="var">even_roll_set</span> <span class="id" title="var">even_roll_subset</span>.<br/>
+<span class="id" title="keyword">Example</span> <span class="id" title="var">evenRollProb</span> : <span class="id" title="var">Di</span> <span class="id" title="var">Pr_</span>( <span class="id" title="var">even_roll_event_of_d6</span> ) = <span class="id" title="var">frac</span> 1 2.<br/>
+<span class="id" title="keyword">Proof</span>. <span class="id" title="tactic">unfold</span> <span class="id" title="var">Di</span>. <span class="id" title="var">compute_probability</span>. <span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">leq3_roll_set</span> : <span class="id" title="var">ListSet</span> <span class="id" title="var">d6_outcome</span> := <br/>
+&nbsp;&nbsp;<span class="id" title="var">ListSetFactory</span> [<span class="id" title="var">One</span>; <span class="id" title="var">Two</span>; <span class="id" title="var">Three</span>] (<span class="id" title="keyword">ltac</span>:(<span class="id" title="var">verify_nodup</span>)).<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">leq3_roll_subset</span> : <span class="id" title="var">leq3_roll_set</span> <span class="id" title="var">subsetOf</span> <span class="id" title="var">d6_roll</span>.<br/>
+<span class="id" title="keyword">Proof</span>. <span class="id" title="tactic">unfold</span> <span class="id" title="var">leq3_roll_set</span>, <span class="id" title="var">d6_roll</span>. <span class="id" title="tactic">simpl</span>. <span class="id" title="var">prove_subset</span>. <span class="id" title="keyword">Qed</span>.<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">leq3_roll_event</span> : <span class="id" title="var">Event</span> <span class="id" title="var">d6_roll</span> := <br/>
+&nbsp;&nbsp;<span class="id" title="var">EventFactory</span> <span class="id" title="var">d6_roll</span> <span class="id" title="var">leq3_roll_set</span> <span class="id" title="var">leq3_roll_subset</span>.<br/>
+<span class="id" title="keyword">Example</span> <span class="id" title="var">leq3RollProb</span> : <span class="id" title="var">Di</span> <span class="id" title="var">Pr_</span>(<span class="id" title="var">leq3_roll_event</span>) = <span class="id" title="var">frac</span> 1 2.<br/>
+<span class="id" title="keyword">Proof</span>. <span class="id" title="tactic">unfold</span> <span class="id" title="var">Di</span>. <span class="id" title="var">compute_probability</span>. <span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Now, I define the probability of an event given another event. This is the 
+    probability of the intersection of the two events divided by the probability
+    of the second event. However, this is not obvious, so I will prove it. 
+
+<div class="paragraph"> </div>
+
+    First, I show that unions, intersections, removals, and subsets of events
+    are also events. That is, I 'lift' the resulting sets into being Events by showing
+    that they are all subsets of the sample space. 
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">intersection_in_ss</span> : <span class="id" title="keyword">forall</span> {<span class="id" title="var">X</span>} (<span class="id" title="var">A</span> <span class="id" title="var">B</span> <span class="id" title="var">C</span> <span class="id" title="var">D</span> : <span class="id" title="var">ListSet</span> <span class="id" title="var">X</span>), <span class="id" title="var">A</span> <span class="id" title="var">subsetOf</span> <span class="id" title="var">D</span> -&gt; <span class="id" title="var">B</span> <span class="id" title="var">subsetOf</span> <span class="id" title="var">D</span> -&gt; <span class="id" title="var">A</span> <span class="id" title="var">intersectWith</span> <span class="id" title="var">B</span> <span class="id" title="keyword">is</span> <span class="id" title="var">C</span> -&gt; <span class="id" title="var">C</span> <span class="id" title="var">subsetOf</span> <span class="id" title="var">D</span>.<br/>
+<span class="id" title="keyword">Proof</span>. <span class="id" title="tactic">unfold</span> <span class="id" title="var">IsSubsetOf</span>, <span class="id" title="var">IsIntersectOf</span>. <span class="id" title="tactic">intros</span>. <span class="id" title="tactic">apply</span> <span class="id" title="var">H0</span>. <span class="id" title="tactic">apply</span> <span class="id" title="var">H1</span>. <span class="id" title="tactic">apply</span> <span class="id" title="var">H2</span>. <span class="id" title="keyword">Qed</span>.<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">union_in_ss</span> : <span class="id" title="keyword">forall</span> {<span class="id" title="var">X</span>} (<span class="id" title="var">A</span> <span class="id" title="var">B</span> <span class="id" title="var">C</span> <span class="id" title="var">D</span> : <span class="id" title="var">ListSet</span> <span class="id" title="var">X</span>), <span class="id" title="var">A</span> <span class="id" title="var">subsetOf</span> <span class="id" title="var">D</span> -&gt; <span class="id" title="var">B</span> <span class="id" title="var">subsetOf</span> <span class="id" title="var">D</span> -&gt; <span class="id" title="var">A</span> <span class="id" title="var">unionWith</span> <span class="id" title="var">B</span> <span class="id" title="keyword">is</span> <span class="id" title="var">C</span> -&gt; <span class="id" title="var">C</span> <span class="id" title="var">subsetOf</span> <span class="id" title="var">D</span>.<br/>
+<span class="id" title="keyword">Proof</span>. <span class="id" title="tactic">unfold</span> <span class="id" title="var">IsSubsetOf</span>, <span class="id" title="var">IsUnionOf</span>. <span class="id" title="tactic">intros</span>. <span class="id" title="tactic">specialize</span> (<span class="id" title="var">H1</span> <span class="id" title="var">x</span>). <span class="id" title="tactic">specialize</span> (<span class="id" title="var">H0</span> <span class="id" title="var">x</span>). <span class="id" title="tactic">specialize</span> (<span class="id" title="var">H</span> <span class="id" title="var">x</span>).<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">destruct</span> <span class="id" title="var">H1</span>. <span class="id" title="tactic">apply</span> <span class="id" title="var">H3</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H2</span>. <span class="id" title="tactic">destruct</span> <span class="id" title="var">H2</span> <span class="id" title="keyword">as</span> [<span class="id" title="var">Hs</span> | <span class="id" title="var">Hs</span>]; [<span class="id" title="tactic">apply</span> <span class="id" title="var">H0</span> | <span class="id" title="tactic">apply</span> <span class="id" title="var">H</span>]; <span class="id" title="tactic">apply</span> <span class="id" title="var">Hs</span>. <span class="id" title="keyword">Qed</span>.<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">removal_in_ss</span> : <span class="id" title="keyword">forall</span> {<span class="id" title="var">X</span>} (<span class="id" title="var">A</span> <span class="id" title="var">B</span> <span class="id" title="var">C</span> <span class="id" title="var">D</span> : <span class="id" title="var">ListSet</span> <span class="id" title="var">X</span>), <span class="id" title="var">A</span> <span class="id" title="var">subsetOf</span> <span class="id" title="var">D</span> -&gt; <span class="id" title="var">B</span> <span class="id" title="var">subsetOf</span> <span class="id" title="var">D</span> -&gt; <span class="id" title="var">A</span> <span class="id" title="var">removing</span> <span class="id" title="var">B</span> <span class="id" title="keyword">is</span> <span class="id" title="var">C</span> -&gt; <span class="id" title="var">C</span> <span class="id" title="var">subsetOf</span> <span class="id" title="var">D</span>.<br/>
+<span class="id" title="keyword">Proof</span>. <span class="id" title="tactic">unfold</span> <span class="id" title="var">IsSubsetOf</span>, <span class="id" title="var">IsRemovalOf</span>. <span class="id" title="tactic">intros</span>. <span class="id" title="tactic">specialize</span> (<span class="id" title="var">H1</span> <span class="id" title="var">x</span>). <span class="id" title="tactic">specialize</span> (<span class="id" title="var">H</span> <span class="id" title="var">x</span>). <span class="id" title="tactic">destruct</span> <span class="id" title="var">H1</span>. <span class="id" title="tactic">apply</span> <span class="id" title="var">H3</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H2</span> <span class="id" title="keyword">as</span> <span class="id" title="var">Hanb</span>. <span class="id" title="tactic">destruct</span> <span class="id" title="var">Hanb</span>. <span class="id" title="tactic">auto</span>. <span class="id" title="keyword">Qed</span>.<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">subset_in_ss</span> : <span class="id" title="keyword">forall</span> {<span class="id" title="var">X</span>} (<span class="id" title="var">A</span> <span class="id" title="var">B</span> <span class="id" title="var">C</span> : <span class="id" title="var">ListSet</span> <span class="id" title="var">X</span>), <span class="id" title="var">A</span> <span class="id" title="var">subsetOf</span> <span class="id" title="var">B</span> -&gt; <span class="id" title="var">B</span> <span class="id" title="var">subsetOf</span> <span class="id" title="var">C</span> -&gt; <span class="id" title="var">A</span> <span class="id" title="var">subsetOf</span> <span class="id" title="var">C</span>.<br/>
+<span class="id" title="keyword">Proof</span>. <span class="id" title="tactic">unfold</span> <span class="id" title="var">IsSubsetOf</span>. <span class="id" title="tactic">intros</span>. <span class="id" title="tactic">apply</span> <span class="id" title="var">H0</span>. <span class="id" title="tactic">specialize</span> (<span class="id" title="var">H</span> <span class="id" title="var">x</span>). <span class="id" title="tactic">specialize</span> (<span class="id" title="var">H0</span> <span class="id" title="var">x</span>). <span class="id" title="tactic">auto</span>. <span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+I can now show that the result of a set operation is another event by
+    constructing an event from the result of the set operation. 
+</div>
+<div class="code">
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">intersection_is_event</span> {<span class="id" title="var">X</span>} (<span class="id" title="var">S</span> : <span class="id" title="var">SampleSpace</span> <span class="id" title="var">X</span>) (<span class="id" title="var">A</span> <span class="id" title="var">B</span> : <span class="id" title="var">Event</span> <span class="id" title="var">S</span>) : <br/>
+&nbsp;&nbsp;<span class="id" title="keyword">forall</span> (<span class="id" title="var">C</span> : <span class="id" title="var">ListSet</span> <span class="id" title="var">X</span>), <span class="id" title="var">A</span> <span class="id" title="var">intersectWith</span> <span class="id" title="var">B</span> <span class="id" title="keyword">is</span> <span class="id" title="var">C</span> -&gt; <span class="id" title="var">IsEvent</span> <span class="id" title="var">S</span> <span class="id" title="var">C</span><br/>
+&nbsp;&nbsp;:= <span class="id" title="keyword">fun</span> <span class="id" title="var">C</span> <span class="id" title="var">H</span> =&gt; <span class="id" title="var">EventFactory</span> <span class="id" title="var">S</span> <span class="id" title="var">C</span> (<span class="id" title="var">intersection_in_ss</span> <span class="id" title="var">A</span> <span class="id" title="var">B</span> <span class="id" title="var">C</span> <span class="id" title="var">S</span> <span class="id" title="var">A</span> <span class="id" title="var">B</span> <span class="id" title="var">H</span>).<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">union_is_event</span> {<span class="id" title="var">X</span>} (<span class="id" title="var">S</span> : <span class="id" title="var">SampleSpace</span> <span class="id" title="var">X</span>) (<span class="id" title="var">A</span> <span class="id" title="var">B</span> : <span class="id" title="var">Event</span> <span class="id" title="var">S</span>) : <span class="id" title="keyword">forall</span> (<span class="id" title="var">C</span> : <span class="id" title="var">ListSet</span> <span class="id" title="var">X</span>), <span class="id" title="var">A</span> <span class="id" title="var">unionWith</span> <span class="id" title="var">B</span> <span class="id" title="keyword">is</span> <span class="id" title="var">C</span> -&gt; <span class="id" title="var">IsEvent</span> <span class="id" title="var">S</span> <span class="id" title="var">C</span><br/>
+&nbsp;&nbsp;:= <span class="id" title="keyword">fun</span> <span class="id" title="var">C</span> <span class="id" title="var">H</span> =&gt; <span class="id" title="var">EventFactory</span> <span class="id" title="var">S</span> <span class="id" title="var">C</span> (<span class="id" title="var">union_in_ss</span> <span class="id" title="var">A</span> <span class="id" title="var">B</span> <span class="id" title="var">C</span> <span class="id" title="var">S</span> <span class="id" title="var">A</span> <span class="id" title="var">B</span> <span class="id" title="var">H</span>).<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">removal_is_event</span> {<span class="id" title="var">X</span>} (<span class="id" title="var">S</span> : <span class="id" title="var">SampleSpace</span> <span class="id" title="var">X</span>) (<span class="id" title="var">A</span> <span class="id" title="var">B</span> : <span class="id" title="var">Event</span> <span class="id" title="var">S</span>) : <span class="id" title="keyword">forall</span> (<span class="id" title="var">C</span> : <span class="id" title="var">ListSet</span> <span class="id" title="var">X</span>), <span class="id" title="var">A</span> <span class="id" title="var">removing</span> <span class="id" title="var">B</span> <span class="id" title="keyword">is</span> <span class="id" title="var">C</span> -&gt; <span class="id" title="var">IsEvent</span> <span class="id" title="var">S</span> <span class="id" title="var">C</span> <br/>
+&nbsp;&nbsp;:= <span class="id" title="keyword">fun</span> <span class="id" title="var">C</span> <span class="id" title="var">H</span> =&gt; <span class="id" title="var">EventFactory</span> <span class="id" title="var">S</span> <span class="id" title="var">C</span> (<span class="id" title="var">removal_in_ss</span> <span class="id" title="var">A</span> <span class="id" title="var">B</span> <span class="id" title="var">C</span> <span class="id" title="var">S</span> <span class="id" title="var">A</span> <span class="id" title="var">B</span> <span class="id" title="var">H</span>).<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">subset_is_event</span> {<span class="id" title="var">X</span>} (<span class="id" title="var">S</span> : <span class="id" title="var">SampleSpace</span> <span class="id" title="var">X</span>) (<span class="id" title="var">A</span> <span class="id" title="var">B</span> : <span class="id" title="var">Event</span> <span class="id" title="var">S</span>) : <span class="id" title="var">A</span> <span class="id" title="var">subsetOf</span> <span class="id" title="var">B</span> -&gt; <span class="id" title="var">IsEvent</span> <span class="id" title="var">S</span> <span class="id" title="var">A</span><br/>
+&nbsp;&nbsp;:= <span class="id" title="keyword">fun</span> <span class="id" title="var">H</span> =&gt; <span class="id" title="var">EventFactory</span> <span class="id" title="var">S</span> <span class="id" title="var">A</span> (<span class="id" title="var">subset_in_ss</span> <span class="id" title="var">A</span> <span class="id" title="var">B</span> <span class="id" title="var">S</span> <span class="id" title="var">H</span> <span class="id" title="var">B</span>).<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Thus, set operations between events is well defined. 
+</div>
+<div class="code">
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">intersection_of_events</span> {<span class="id" title="var">X</span>} (<span class="id" title="var">S</span> : <span class="id" title="var">SampleSpace</span> <span class="id" title="var">X</span>) (<span class="id" title="var">A</span> <span class="id" title="var">B</span> : <span class="id" title="var">Event</span> <span class="id" title="var">S</span>) : <span class="id" title="var">Event</span> <span class="id" title="var">S</span> -&gt; <span class="id" title="keyword">Prop</span> := <span class="id" title="var">IsIntersectOf</span> <span class="id" title="var">A</span> <span class="id" title="var">B</span>.<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">union_event</span> {<span class="id" title="var">X</span>} (<span class="id" title="var">S</span> : <span class="id" title="var">SampleSpace</span> <span class="id" title="var">X</span>) (<span class="id" title="var">A</span> <span class="id" title="var">B</span> : <span class="id" title="var">Event</span> <span class="id" title="var">S</span>) : <span class="id" title="var">Event</span> <span class="id" title="var">S</span> -&gt; <span class="id" title="keyword">Prop</span> := <span class="id" title="var">IsUnionOf</span> <span class="id" title="var">A</span> <span class="id" title="var">B</span>.<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">removal_event</span> {<span class="id" title="var">X</span>} (<span class="id" title="var">S</span> : <span class="id" title="var">SampleSpace</span> <span class="id" title="var">X</span>) (<span class="id" title="var">A</span> <span class="id" title="var">B</span> :<span class="id" title="var">Event</span> <span class="id" title="var">S</span>) : <span class="id" title="var">Event</span> <span class="id" title="var">S</span> -&gt; <span class="id" title="keyword">Prop</span> := <span class="id" title="var">IsRemovalOf</span> <span class="id" title="var">A</span> <span class="id" title="var">B</span>.<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">subset_event</span> {<span class="id" title="var">X</span>} (<span class="id" title="var">S</span> : <span class="id" title="var">SampleSpace</span> <span class="id" title="var">X</span>) (<span class="id" title="var">A</span> : <span class="id" title="var">Event</span> <span class="id" title="var">S</span>) : <span class="id" title="var">Event</span> <span class="id" title="var">S</span> -&gt; <span class="id" title="keyword">Prop</span> := <span class="id" title="var">IsSubsetOf</span> <span class="id" title="var">A</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">prob_A_given_B</span> {<span class="id" title="var">X</span>} {<span class="id" title="var">S</span> : <span class="id" title="var">SampleSpace</span> <span class="id" title="var">X</span>} (<span class="id" title="var">pmf</span> : <span class="id" title="var">PMF_func</span> <span class="id" title="var">S</span>) (<span class="id" title="var">A</span> <span class="id" title="var">B</span> : <span class="id" title="var">Event</span> <span class="id" title="var">S</span>) :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">fun</span> (<span class="id" title="var">C</span> : <span class="id" title="var">Event</span> <span class="id" title="var">S</span>) (<span class="id" title="var">H</span> : <span class="id" title="var">A</span> <span class="id" title="var">intersectWith</span> <span class="id" title="var">B</span> <span class="id" title="keyword">is</span> <span class="id" title="var">C</span>) =&gt; <span class="id" title="keyword">let</span> <span class="id" title="var">Pr</span> := <span class="id" title="var">event_prob_func</span> <span class="id" title="var">pmf</span> <span class="id" title="tactic">in</span> (<span class="id" title="var">Pr</span> <span class="id" title="var">C</span>) / (<span class="id" title="var">Pr</span> <span class="id" title="var">B</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Notation</span> &quot;F 'Pr_(' A '|' B ')' " := (<span class="id" title="var">prob_A_given_B</span> <span class="id" title="var">F</span> <span class="id" title="var">A</span> <span class="id" title="var">B</span>) (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 50).<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+To make this more usable, however, I attempted to  prove that the intersection must exist trivially, and 
+    therefore does not need to be provided. I must do this inductively using propositions because
+    I do not have a defined equality for X, since it is arbitrary. This requires the law of excluded
+    middle, though. I use a weak version to only prove that an element is in the set, or it isn't. 
+
+<div class="paragraph"> </div>
+
+    However, because the Intersect was defined inductively, and not using eq_dec, it is not guaranteed
+    to compute the actual intersect for a given datatype, since that datatype may not have 
+    a consistent definition of equality.
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">Axiom</span> <span class="id" title="var">in_or_out</span> : <span class="id" title="keyword">forall</span> {<span class="id" title="var">X</span>} (<span class="id" title="var">x</span> : <span class="id" title="var">X</span>) (<span class="id" title="var">S</span> : <span class="id" title="var">list</span> <span class="id" title="var">X</span>), <span class="id" title="var">In</span> <span class="id" title="var">x</span> <span class="id" title="var">S</span> \/ ~ <span class="id" title="var">In</span> <span class="id" title="var">x</span> <span class="id" title="var">S</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Inductive</span> <span class="id" title="var">Intersect</span> {<span class="id" title="var">X</span> : <span class="id" title="keyword">Type</span>} : <span class="id" title="var">list</span> <span class="id" title="var">X</span> -&gt; <span class="id" title="var">list</span> <span class="id" title="var">X</span> -&gt; <span class="id" title="var">list</span> <span class="id" title="var">X</span> -&gt; <span class="id" title="keyword">Prop</span> :=<br/>
+&nbsp;&nbsp;| <span class="id" title="var">Intersect_nil</span> : <span class="id" title="keyword">forall</span> <span class="id" title="var">B</span>, <span class="id" title="var">Intersect</span> [] <span class="id" title="var">B</span> []<br/>
+&nbsp;&nbsp;| <span class="id" title="var">Intersect_cons_in</span> : <span class="id" title="keyword">forall</span> <span class="id" title="var">x</span> <span class="id" title="var">A</span> <span class="id" title="var">B</span> <span class="id" title="var">AB</span>, <span class="id" title="var">In</span> <span class="id" title="var">x</span> <span class="id" title="var">B</span> -&gt; <span class="id" title="var">Intersect</span> <span class="id" title="var">A</span> <span class="id" title="var">B</span> <span class="id" title="var">AB</span> -&gt; <span class="id" title="var">Intersect</span> (<span class="id" title="var">x</span> :: <span class="id" title="var">A</span>) <span class="id" title="var">B</span> (<span class="id" title="var">x</span> :: <span class="id" title="var">AB</span>)<br/>
+&nbsp;&nbsp;| <span class="id" title="var">Intersect_cons_not_in</span> : <span class="id" title="keyword">forall</span> <span class="id" title="var">x</span> <span class="id" title="var">A</span> <span class="id" title="var">B</span> <span class="id" title="var">AB</span>, ~ <span class="id" title="var">In</span> <span class="id" title="var">x</span> <span class="id" title="var">B</span> -&gt; <span class="id" title="var">Intersect</span> <span class="id" title="var">A</span> <span class="id" title="var">B</span> <span class="id" title="var">AB</span> -&gt; <span class="id" title="var">Intersect</span> (<span class="id" title="var">x</span> :: <span class="id" title="var">A</span>) <span class="id" title="var">B</span> <span class="id" title="var">AB</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Theorem</span> <span class="id" title="var">intersection_exists</span> {<span class="id" title="var">X</span> : <span class="id" title="keyword">Type</span>} (<span class="id" title="var">A</span> <span class="id" title="var">B</span> : <span class="id" title="var">list</span> <span class="id" title="var">X</span>) : <span class="id" title="tactic">exists</span> <span class="id" title="var">AB</span>, <span class="id" title="var">Intersect</span> <span class="id" title="var">A</span> <span class="id" title="var">B</span> <span class="id" title="var">AB</span>.<br/>
+<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">induction</span> <span class="id" title="var">A</span> <span class="id" title="keyword">as</span> [| <span class="id" title="var">x</span> <span class="id" title="var">A</span> <span class="id" title="var">IHA</span>].<br/>
+&nbsp;&nbsp;- <span class="id" title="tactic">exists</span> []. <span class="id" title="tactic">constructor</span>.<br/>
+&nbsp;&nbsp;- <span class="id" title="tactic">assert</span> (<span class="id" title="var">H</span> : <span class="id" title="var">In</span> <span class="id" title="var">x</span> <span class="id" title="var">B</span> \/ ~ <span class="id" title="var">In</span> <span class="id" title="var">x</span> <span class="id" title="var">B</span>).<br/>
+&nbsp;&nbsp;{ <span class="id" title="tactic">apply</span> <span class="id" title="var">in_or_out</span>. }<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">destruct</span> <span class="id" title="var">H</span> <span class="id" title="keyword">as</span> [<span class="id" title="var">HIn</span> | <span class="id" title="var">HNotIn</span>].<br/>
+&nbsp;&nbsp;+ <span class="id" title="tactic">destruct</span> <span class="id" title="var">IHA</span> <span class="id" title="keyword">as</span> [<span class="id" title="var">AB</span> <span class="id" title="var">HAB</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">exists</span> (<span class="id" title="var">x</span> :: <span class="id" title="var">AB</span>). <span class="id" title="tactic">constructor</span>; <span class="id" title="tactic">assumption</span>.<br/>
+&nbsp;&nbsp;+ <span class="id" title="tactic">destruct</span> <span class="id" title="var">IHA</span> <span class="id" title="keyword">as</span> [<span class="id" title="var">AB</span> <span class="id" title="var">HAB</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">exists</span> <span class="id" title="var">AB</span>. <span class="id" title="tactic">constructor</span>; <span class="id" title="tactic">assumption</span>.<br/>
+<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Here is an example of conditional probability with the dice roll. 
+</div>
+<div class="code">
+<span class="id" title="keyword">Example</span> <span class="id" title="var">even_and_leq3</span> : <span class="id" title="var">Event</span> <span class="id" title="var">d6_roll</span> := <br/>
+&nbsp;&nbsp;<span class="id" title="var">EventFactory</span> <span class="id" title="var">d6_roll</span> <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">ListSetFactory</span> [<span class="id" title="var">Two</span>] (<span class="id" title="keyword">ltac</span>:(<span class="id" title="var">verify_nodup</span>))) <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="keyword">ltac</span>:(<span class="id" title="tactic">unfold</span> <span class="id" title="var">d6_roll</span>; <span class="id" title="tactic">simpl</span>; <span class="id" title="var">prove_subset</span>)).<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">even_and_leq3_is_intersect</span> : <span class="id" title="var">even_roll_event_of_d6</span> <span class="id" title="var">intersectWith</span> <span class="id" title="var">leq3_roll_event</span> <span class="id" title="keyword">is</span> <span class="id" title="var">even_and_leq3</span>.<br/>
+<span class="id" title="keyword">Proof</span>. <span class="id" title="tactic">unfold</span> <span class="id" title="var">IsIntersectOf</span>, <span class="id" title="var">even_roll_event_of_d6</span>, <span class="id" title="var">leq3_roll_event</span>. <span class="id" title="tactic">simpl</span>. <span class="id" title="tactic">intros</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">split</span>; <span class="id" title="tactic">intros</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="tactic">destruct</span> <span class="id" title="var">H</span>. <span class="id" title="tactic">split</span>; <span class="id" title="tactic">auto</span>. <span class="id" title="tactic">split</span>; <span class="id" title="tactic">auto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="tactic">repeat</span> <span class="id" title="tactic">destruct</span> <span class="id" title="var">H</span>; <span class="id" title="tactic">destruct</span> <span class="id" title="var">H0</span>; <span class="id" title="tactic">auto</span>; <span class="id" title="tactic">try</span> <span class="id" title="tactic">discriminate</span>; <span class="id" title="tactic">try</span> (<span class="id" title="tactic">repeat</span> <span class="id" title="tactic">destruct</span> <span class="id" title="var">H</span>; <span class="id" title="tactic">discriminate</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">destruct</span> <span class="id" title="var">H</span>; <span class="id" title="tactic">auto</span>. <span class="id" title="tactic">destruct</span> <span class="id" title="var">H</span>; <span class="id" title="tactic">auto</span>. <span class="id" title="tactic">discriminate</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">destruct</span> <span class="id" title="var">H</span>; <span class="id" title="tactic">auto</span>. <span class="id" title="tactic">destruct</span> <span class="id" title="var">H</span>. <span class="id" title="tactic">discriminate</span>. <span class="id" title="tactic">destruct</span> <span class="id" title="var">H</span>. <span class="id" title="keyword">Qed</span>.<br/>
+<span class="id" title="keyword">Example</span> <span class="id" title="var">even_given_leq3_correct</span> : <span class="id" title="var">Di</span> <span class="id" title="var">Pr_</span>(<span class="id" title="var">even_roll_event_of_d6</span> | <span class="id" title="var">leq3_roll_event</span>)<br/>
+&nbsp;&nbsp;<span class="id" title="var">even_and_leq3</span> <span class="id" title="var">even_and_leq3_is_intersect</span> = 1/3.<br/>
+<span class="id" title="keyword">Proof</span>. <span class="id" title="tactic">unfold</span> <span class="id" title="var">Di</span>, <span class="id" title="var">prob_A_given_B</span>, <span class="id" title="var">event_prob_func</span>. <span class="id" title="tactic">simpl</span>. <span class="id" title="tactic">unfold</span> <span class="id" title="var">frac</span>. <span class="id" title="var">lra</span>. <span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Field</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Conceptually, two events will be independent if the probability of one occuring
+    does not affect the probability of the other. This is often defined as 
+    P(A and B) = P(A)P(B). 
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">events_independent</span> {<span class="id" title="var">X</span>} {<span class="id" title="var">S</span> : <span class="id" title="var">SampleSpace</span> <span class="id" title="var">X</span>} (<span class="id" title="var">pmf</span> : <span class="id" title="var">PMF_func</span> <span class="id" title="var">S</span>) (<span class="id" title="var">A</span> <span class="id" title="var">B</span> : <span class="id" title="var">Event</span> <span class="id" title="var">S</span>) : <span class="id" title="keyword">Prop</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">forall</span> <span class="id" title="var">C</span> <span class="id" title="var">H</span>, (<span class="id" title="var">pmf</span> <span class="id" title="var">Pr_</span>(<span class="id" title="var">A</span> | <span class="id" title="var">B</span>) <span class="id" title="var">C</span> <span class="id" title="var">H</span>) = (<span class="id" title="var">pmf</span> <span class="id" title="var">Pr_</span>(<span class="id" title="var">A</span>)) * (<span class="id" title="var">pmf</span> <span class="id" title="var">Pr_</span>(<span class="id" title="var">B</span>)).<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Finally, I prove an important result in probability: Bayes Theorem. 
+    Bayes' is integral in solving many problems involving conditional probability,
+    as it offers a new way to compute it.
+  
+</div>
+<div class="code">
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">converse_conditional</span> : <span class="id" title="keyword">forall</span> {<span class="id" title="var">X</span>} {<span class="id" title="var">S</span> : <span class="id" title="var">SampleSpace</span> <span class="id" title="var">X</span>} (<span class="id" title="var">pmf</span> : <span class="id" title="var">PMF_func</span> <span class="id" title="var">S</span>) (<span class="id" title="var">A</span> <span class="id" title="var">B</span> <span class="id" title="var">AnB</span>: <span class="id" title="var">Event</span> <span class="id" title="var">S</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">H</span>: <span class="id" title="var">A</span> <span class="id" title="var">intersectWith</span> <span class="id" title="var">B</span> <span class="id" title="keyword">is</span> <span class="id" title="var">AnB</span> ), <span class="id" title="var">pmf</span> <span class="id" title="var">Pr_</span>(<span class="id" title="var">B</span>) &gt; 0 -&gt; <span class="id" title="var">pmf</span> <span class="id" title="var">Pr_</span>(<span class="id" title="var">AnB</span>) = (<span class="id" title="var">pmf</span> <span class="id" title="var">Pr_</span>(<span class="id" title="var">B</span>)) * (<span class="id" title="var">pmf</span> <span class="id" title="var">Pr_</span>(<span class="id" title="var">A</span> | <span class="id" title="var">B</span>) <span class="id" title="var">AnB</span> <span class="id" title="var">H</span>).<br/>
+<span class="id" title="keyword">Proof</span>. <span class="id" title="tactic">intros</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">assert</span> (<span class="id" title="var">Hdiv</span> : (<span class="id" title="var">pmf</span> <span class="id" title="var">Pr_</span>(<span class="id" title="var">AnB</span>)) / (<span class="id" title="var">pmf</span> <span class="id" title="var">Pr_</span>(<span class="id" title="var">B</span>)) = <span class="id" title="var">pmf</span> <span class="id" title="var">Pr_</span>(<span class="id" title="var">A</span> | <span class="id" title="var">B</span>) <span class="id" title="var">AnB</span> <span class="id" title="var">H</span>).<br/>
+&nbsp;&nbsp;{ <span class="id" title="tactic">unfold</span> <span class="id" title="var">prob_A_given_B</span>. <span class="id" title="tactic">reflexivity</span>. }<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">assert</span> (<span class="id" title="var">Hg0</span>: <span class="id" title="var">pmf</span> <span class="id" title="var">Pr_</span>(<span class="id" title="var">B</span>) &lt;&gt; 0). { <span class="id" title="tactic">apply</span> <span class="id" title="var">Rgt_not_eq</span>. <span class="id" title="tactic">apply</span> <span class="id" title="var">H0</span>. }<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">Rmult_eq_compat_r</span> <span class="id" title="keyword">with</span> (<span class="id" title="var">r</span> := (<span class="id" title="var">pmf</span> <span class="id" title="var">Pr_</span>(<span class="id" title="var">B</span>))) <span class="id" title="tactic">in</span> <span class="id" title="var">Hdiv</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="var">field_simplify</span> <span class="id" title="tactic">in</span> <span class="id" title="var">Hdiv</span>. <span class="id" title="tactic">apply</span> <span class="id" title="var">Hdiv</span>. <span class="id" title="tactic">rewrite</span> <span class="id" title="var">Hdiv</span> <span class="id" title="tactic">in</span> <span class="id" title="var">Hg0</span>. <span class="id" title="tactic">destruct</span> <span class="id" title="var">Hg0</span>. <span class="id" title="tactic">reflexivity</span>. <span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Theorem</span> <span class="id" title="var">Bayes_Theorem</span> : <span class="id" title="keyword">forall</span> {<span class="id" title="var">X</span>} {<span class="id" title="var">S</span> : <span class="id" title="var">SampleSpace</span> <span class="id" title="var">X</span>} (<span class="id" title="var">pmf</span> : <span class="id" title="var">PMF_func</span> <span class="id" title="var">S</span>) (<span class="id" title="var">A</span> <span class="id" title="var">B</span> <span class="id" title="var">AnB</span>: <span class="id" title="var">Event</span> <span class="id" title="var">S</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">Hba</span> : <span class="id" title="var">B</span> <span class="id" title="var">intersectWith</span> <span class="id" title="var">A</span> <span class="id" title="keyword">is</span> <span class="id" title="var">AnB</span>) (<span class="id" title="var">Hab</span> : <span class="id" title="var">A</span> <span class="id" title="var">intersectWith</span> <span class="id" title="var">B</span> <span class="id" title="keyword">is</span> <span class="id" title="var">AnB</span>), <span class="id" title="var">pmf</span> <span class="id" title="var">Pr_</span>(<span class="id" title="var">A</span>) &gt; 0 -&gt; <span class="id" title="var">pmf</span> <span class="id" title="var">Pr_</span>(<span class="id" title="var">B</span>) &gt; 0 -&gt; <br/>
+&nbsp;&nbsp;<span class="id" title="var">pmf</span> <span class="id" title="var">Pr_</span>(<span class="id" title="var">A</span> | <span class="id" title="var">B</span>) <span class="id" title="var">AnB</span> <span class="id" title="var">Hab</span> = (<span class="id" title="var">pmf</span> <span class="id" title="var">Pr_</span>(<span class="id" title="var">B</span> | <span class="id" title="var">A</span>) <span class="id" title="var">AnB</span> <span class="id" title="var">Hba</span>) * (<span class="id" title="var">pmf</span> <span class="id" title="var">Pr_</span>(<span class="id" title="var">A</span>)) / (<span class="id" title="var">pmf</span> <span class="id" title="var">Pr_</span>(<span class="id" title="var">B</span>)).<br/>
+<span class="id" title="keyword">Proof</span>. <span class="id" title="tactic">intros</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">pose</span> <span class="id" title="var">proof</span> (<span class="id" title="var">converse_conditional</span> <span class="id" title="var">pmf</span> <span class="id" title="var">B</span> <span class="id" title="var">A</span> <span class="id" title="var">AnB</span> <span class="id" title="var">Hba</span> <span class="id" title="var">H</span>) <span class="id" title="keyword">as</span> <span class="id" title="var">CC1</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">pose</span> <span class="id" title="var">proof</span> (<span class="id" title="var">converse_conditional</span> <span class="id" title="var">pmf</span> <span class="id" title="var">A</span> <span class="id" title="var">B</span> <span class="id" title="var">AnB</span> <span class="id" title="var">Hab</span> <span class="id" title="var">H0</span>) <span class="id" title="keyword">as</span> <span class="id" title="var">CC2</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <span class="id" title="var">CC1</span> <span class="id" title="tactic">in</span> <span class="id" title="var">CC2</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">assert</span> (<span class="id" title="var">HbGt</span> : <span class="id" title="var">pmf</span> <span class="id" title="var">Pr_</span>(<span class="id" title="var">B</span>) &lt;&gt; 0). { <span class="id" title="tactic">apply</span> <span class="id" title="var">Rgt_not_eq</span>. <span class="id" title="tactic">apply</span> <span class="id" title="var">H0</span>. }<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">Rmult_eq_compat_l</span> <span class="id" title="keyword">with</span> (<span class="id" title="var">r</span> := /(<span class="id" title="var">pmf</span> <span class="id" title="var">Pr_</span>( <span class="id" title="var">B</span>))) <span class="id" title="tactic">in</span> <span class="id" title="var">CC2</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="var">field_simplify</span> <span class="id" title="tactic">in</span> <span class="id" title="var">CC2</span>. <span class="id" title="tactic">symmetry</span>. <span class="id" title="tactic">rewrite</span> <span class="id" title="var">Rmult_comm</span> <span class="id" title="tactic">in</span> <span class="id" title="var">CC2</span>. <span class="id" title="tactic">apply</span> <span class="id" title="var">CC2</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">auto</span>. <span class="id" title="tactic">auto</span>. <span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Expected Value 
+</div>
+<div class="code">
+</div>
+</div>
+
+<div id="footer">
+<hr/><a href="index.html">Index</a><hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>
